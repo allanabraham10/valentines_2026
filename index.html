@@ -5,9 +5,6 @@
   <title>Allan ❤️ Iris</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Confetti Library -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
   <style>
     body {
       margin: 0;
@@ -20,18 +17,6 @@
       overflow: hidden;
     }
 
-    /* YouTube background */
-    .bg-video {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: -1;
-      opacity: 0.25;
-    }
-
     .card {
       text-align: center;
       background: white;
@@ -41,6 +26,7 @@
       max-width: 420px;
       width: 90%;
       position: relative;
+      z-index: 2;
     }
 
     h1 {
@@ -108,6 +94,33 @@
       }
     }
 
+    /* Fireworks canvas */
+    #fireworks {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Music overlay */
+    .music-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 20px;
+      z-index: 5;
+      cursor: pointer;
+      text-align: center;
+      padding: 20px;
+    }
+
     /* WhatsApp button */
     .share-btn {
       margin-top: 20px;
@@ -123,13 +136,19 @@
 </head>
 
 <body>
-  <!-- Background Song -->
-  <iframe
-    class="bg-video"
-    src="https://www.youtube.com/embed/0dSMAWgFNPA?autoplay=1&mute=1&loop=1&playlist=0dSMAWgFNPA"
-    frameborder="0"
-    allow="autoplay">
-  </iframe>
+
+  <!-- Fireworks Canvas -->
+  <canvas id="fireworks"></canvas>
+
+  <!-- Tap to play music -->
+  <div id="musicOverlay" class="music-overlay">
+    🎵 Tap anywhere to start our song ❤️
+  </div>
+
+  <!-- Background Music (No ads — direct audio) -->
+  <audio id="bgMusic" loop>
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3" type="audio/mpeg">
+  </audio>
 
   <div class="card">
     <h1 id="question">Iris, Will You Be Allan’s Valentine? 💌</h1>
@@ -142,10 +161,7 @@
     <div id="message" class="message hidden">
       YAYYY!!! ❤️ Allan loves you Iris 🥰
       <br />
-      <a
-        id="waShare"
-        class="share-btn hidden"
-        target="_blank">
+      <a id="waShare" class="share-btn hidden" target="_blank">
         Share the news on WhatsApp 💚
       </a>
     </div>
@@ -157,27 +173,33 @@
     const message = document.getElementById("message");
     const question = document.getElementById("question");
     const waShare = document.getElementById("waShare");
+    const music = document.getElementById("bgMusic");
+    const overlay = document.getElementById("musicOverlay");
 
     let noCount = 0;
 
-    // YES CLICK
+    /* MUSIC START */
+    overlay.addEventListener("click", () => {
+      music.play();
+      overlay.style.display = "none";
+    });
+
+    /* YES CLICK */
     yesBtn.addEventListener("click", () => {
       message.classList.remove("hidden");
       waShare.classList.remove("hidden");
-
       question.innerText = "Best Valentine’s Everrr ❤️";
 
-      launchConfetti();
       heartRain();
+      startFireworks();
 
-      // WhatsApp link (auto fills site URL)
       const text = encodeURIComponent(
         "I said YES to Allan ❤️🥰"
       );
       waShare.href = `https://wa.me/?text=${text}`;
     });
 
-    // NO CLICK LOGIC
+    /* NO CLICK */
     noBtn.addEventListener("click", () => {
       noCount++;
 
@@ -186,13 +208,11 @@
         noBtn.style.transform = "scale(0.9)";
         yesBtn.style.transform = "scale(1.2)";
       }
-      
       else if (noCount === 2) {
         question.innerText = "Pretty pleaseee Iris? 🥺👉👈❤️";
         noBtn.style.transform = "scale(0.75)";
         yesBtn.style.transform = "scale(1.3)";
       }
-      
       else if (noCount >= 3) {
         question.innerText = "You can’t say no now 😤❤️";
         noBtn.addEventListener("mouseover", moveButton);
@@ -205,16 +225,7 @@
       noBtn.style.transform = `translate(${x}px, ${y}px) scale(0.7)`;
     }
 
-    // Confetti explosion
-    function launchConfetti() {
-      confetti({
-        particleCount: 200,
-        spread: 120,
-        origin: { y: 0.6 }
-      });
-    }
-
-    // Heart rain
+    /* HEART RAIN */
     function heartRain() {
       setInterval(() => {
         const heart = document.createElement("div");
@@ -223,9 +234,54 @@
         heart.style.left = Math.random() * 100 + "vw";
         heart.style.animationDuration = Math.random() * 2 + 3 + "s";
         document.body.appendChild(heart);
-
         setTimeout(() => heart.remove(), 5000);
       }, 200);
+    }
+
+    /* FIREWORKS */
+    const canvas = document.getElementById("fireworks");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    function startFireworks() {
+      setInterval(() => {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height / 2;
+        explode(x, y);
+      }, 600);
+    }
+
+    function explode(x, y) {
+      for (let i = 0; i < 50; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const speed = Math.random() * 5 + 2;
+        const dx = Math.cos(angle) * speed;
+        const dy = Math.sin(angle) * speed;
+
+        animateParticle(x, y, dx, dy);
+      }
+    }
+
+    function animateParticle(x, y, dx, dy) {
+      let life = 50;
+
+      function draw() {
+        if (life <= 0) return;
+        life--;
+
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${Math.random()*360},100%,50%)`;
+        ctx.fill();
+
+        x += dx;
+        y += dy;
+
+        requestAnimationFrame(draw);
+      }
+
+      draw();
     }
   </script>
 </body>
